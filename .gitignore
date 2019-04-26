@@ -1,0 +1,15 @@
+.idea
+jmeter.log
+*.pyc
+__cache__
+logs/*.log
+env
+nohup.out
+db/*
+celerybeat-schedule.db
+app/static/debug_detail/*.txt
+apache-jmeter-3.3/scripts/*
+apache-jmeter-3.3/uploads/*
+gatling2.2.4/user-files/data/*
+gatling2.2.4/user-files/simulations/*
+gatling2.2.4/target/test-classes/*

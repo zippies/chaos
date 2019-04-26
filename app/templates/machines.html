@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}
+    machines
+{% endblock %}
+
+{% block cssrc %}
+    {{ super() }}
+{% endblock %}
+
+{% block css %}
+    .machineinput {
+    width:100%
+    }
+{% endblock %}
+
+{% block container %}
+    <form id="newmachineform" method="post" enctype="multipart/form-data">
+        <ul class="list-inline">
+            <li><label><span style="color:red">*</span>机器名称:</label></li>
+            <li><input class="form-control" id="name" name="name" type="text" value="loadMachine"></li>
+            <li><label><span style="color:red">*</span>登录方式:</label></li>
+            <li>
+                <label class="radio-inline">
+                    <input type="radio" id="radio-password" name="sshtype" value="password" checked="checked"
+                           onclick="sshType('password')"> password
+                </label>
+            </li>
+            <li>
+                <label class="radio-inline">
+                    <input type="radio" id="radio-privatekey" name="sshtype" value="privatekey"
+                           onclick="sshType('privatekey')"> private key
+                </label>
+            </li>
+        </ul>
+
+        <ul class="list-inline">
+            <li><label><span style="color:red">*</span>机器 IP : </label></li>
+            <li><input class="form-control" id="ip" name="ip" type="text" value="172.16.51.76"></li>
+            <li><label><span style="color:red">*</span>端口</label></li>
+            <li><input class="form-control" name="port" type="text" value="22"></li>
+            <li><label><span style="color:red">*</span>user:</label></li>
+            <li><input class="form-control" id="user" name="user" type="text" value="appweb"></li>
+            <li><label><span style="color:red">*</span><span id="typespan">password</span>:</label></li>
+            <li id="passworddiv">
+                <input class="form-control" id="password" name="password" type="password" value="">
+            </li>
+            <li id="privatekeydiv" style="display:none">
+                <textarea id="privatekey" rows="1" cols="30" name="privatekey"
+                          placeholder="粘贴本地私钥内容:cat ~/.ssh/id_rsa"></textarea>
+            </li>
+            <li>
+                <a class="btn btn-primary" id="submit">确认添加</a>
+            </li>
+        </ul>
+    </form>
+
+    <hr>
+
+    <div class="col-lg-12" id="machinelistdiv">
+    </div>
+{% endblock %}
+
+{% block script %}
+    {{ super() }}
+    <script src="/static/js/main.js"></script>
+
+    <script>
+        function sshType(type) {
+            if (type == 'password') {
+                $("#typespan").html("password");
+                $("#passworddiv").show();
+                $("#privatekeydiv").hide();
+                $("#radio-password").attr("checked", "checked");
+                $("#radio-privatekey").removeAttr("checked");
+            } else {
+                $("#typespan").html("private key");
+                $("#passworddiv").hide();
+                $("#privatekeydiv").show();
+                $("#radio-privatekey").attr("checked", "checked");
+                $("#radio-password").removeAttr("checked");
+            }
+        }
+
+
+        function validateSubmit() {
+            if (!$.trim($("#name").val())) {
+                layer.msg("名称不能为空");
+                $("#name").focus();
+                return false
+            }
+            if (!$.trim($("#ip").val())) {
+                layer.msg("ip不能为空");
+                $("#ip").focus();
+                return false
+            }
+            if (!$.trim($("#user").val())) {
+                layer.msg("user不能为空");
+                $("#user").focus();
+                return false
+            }
+            if ($("#radio-password").attr("checked") == 'checked') {
+                if (!$.trim($("#password").val())) {
+                    layer.msg("密码不能为空");
+                    $("#password").focus();
+                    return false
+                }
+            } else {
+                if ($.trim($("#privatekey").val()) == '') {
+                    layer.msg("私钥内容不能为空");
+                    $("#file").focus();
+                    return false
+                }
+            }
+            return true
+        }
+
+
+        function freshMachine() {
+            $.ajax({
+                url: "/getmachines?isadmin={{ isadmin }}",
+                type: "get",
+                error: function (request) {
+                    layer.msg("刷新失败:" + request.status)
+                },
+                success: function (data) {
+                    $("#machinelistdiv").empty().append(data)
+                }
+            })
+        }
+
+
+        function editmachine(id) {
+            $("#editmachine_" + id).hide();
+            $("#saveedit_" + id).show();
+            $(".machineinfo_" + id).removeAttr("disabled")
+        }
+
+
+        function saveedit(id) {
+            var values = "?id=" + id + "&";
+            $(".machineinfo_" + id).each(function () {
+                values += $(this).attr("name") + "=" + $(this).val() + "&"
+            })
+            values = values.substring(0, values.length - 1);
+            $.get("/editmachine" + values, function (data) {
+                if (data.result) {
+                    layer.msg('保存成功')
+                } else {
+                    layer.msg('失败:' + data.info)
+                }
+            })
+            $("#saveedit_" + id).hide();
+            $("#editmachine_" + id).show();
+            $(".machineinfo_" + id).attr("disabled", "disabled")
+        }
+
+
+        function delmachine(id) {
+            layer.confirm("确定删除吗？", {btn: ['确定', '取消']}, function () {
+                $.get("/delmachine/" + id, function (data) {
+                    if (data.result) {
+                        layer.msg('删除成功');
+                        $("#machinediv_" + id).remove()
+                    } else {
+                        layer.msg('失败:' + data.info)
+                    }
+                })
+            }, function () {
+                console.log('取消')
+            })
+        }
+
+
+        $(function () {
+            freshMachine();
+            $("#submit").click(function () {
+                if (!validateSubmit()) {
+                    return
+                }
+
+                var index = layer.load(2, {
+                    shade: [0.1, '#ffa243'],
+                    offset: '200px'
+                });
+
+                var formdata = new FormData($("#newmachineform")[0]);
+                $.ajax({
+                    url: "/newmachine",
+                    type: "POST",
+                    data: formdata,
+                    dataType: "JSON",
+                    cache: false,
+                    processData: false,
+                    contentType: false,
+                    error: function (request) {
+                        layer.close(index);
+                        layer.msg("添加失败:" + request.status)
+                    },
+                    success: function (data) {
+                        layer.close(index);
+                        if (data.result) {
+                            layer.msg("添加成功");
+                            freshMachine();
+                        } else {
+                            layer.msg("添加失败:" + data.errorMsg)
+                        }
+                    }
+                })
+            })
+        })
+    </script>
+{% endblock %}

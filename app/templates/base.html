@@ -1,0 +1,83 @@
+<html>
+<head>
+    <title>Magazine -{% block title %}{% endblock %}</title>
+    <link rel="icon" href="/static/imgs/favicon.ico"/>
+    <link rel="stylesheet" href="/static/bower_components/bootstrap/dist/css/bootstrap.min.css" type="text/css"/>
+    <link rel="stylesheet" href="/static/bower_components/bootstrap-table/dist/bootstrap-table.min.css">
+    <link rel="stylesheet" href="/static/bower_components/bootstrap-multiselect/dist/css/bootstrap-multiselect.css"
+          type="text/css"/>
+    <script type="text/javascript" src="/static/bower_components/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/static/bower_components/bootstrap-table/dist/bootstrap-table.min.js"></script>
+    <script type="text/javascript" src="/static/bower_components/bootstrap-multiselect/dist/js/bootstrap-multiselect.js"></script>
+    <!-- Include the plugin's CSS and JS: -->
+    {% block csssrc %}
+    {% endblock %}
+    {% block scriptrc %}
+    {% endblock %}
+    <style>
+        .lineitem {
+            margin-bottom: 20px;
+            margin-left: 20px;
+        }
+
+        body {
+            background-color: white;
+        }
+
+        .global {
+            font-size: 13px;
+        }
+
+        {% block css %}
+        {% endblock %}
+    </style>
+
+</head>
+<body>
+<nav class="navbar navbar-inverse navbar-static-top global" style="background:rgb(44, 171, 227);border:0px;">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header" style="vertical-align: middle;">
+             <a class="navbar-brand" href="javascript:;" style="color: deeppink;"> Magazine</a><img src="/static/imgs/home.jpg" height="40" width="40" alt="" style="margin-top:5px;margin-right:10px">
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav" id="mainnavul">
+                <li {% if choiced == "addMission" %}class="active"{% endif %}><a href="/addmission">新建压测任务</a></li>
+                <li {% if choiced == "missions" %}class="active"{% endif %}><a href="/missions">历史压测任务</a></li>
+                <li {% if choiced == "analyze" %}class="active"{% endif %}><a href="/analyze">历史性能对比</a></li>
+            </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+{#                <li><a href="/uploadscript">运行上传脚本</a></li>#}
+                <li {% if choiced == "agents" %}class="active"{% endif %}><a href="/agents">节点机管理</a></li>
+                <li {% if choiced == "machines" %}class="active"{% endif %}><a href="/machines">添加登录授权</a></li>
+                <li>
+                    <a href="#">{{ nickname }}</a>
+                </li>
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+</nav>
+
+<div style="margin-left:20px;margin-right:20px;" class="global">
+    {% block container %}
+    {% endblock %}
+</div>
+
+
+{% block script %}
+    <script src="/static/layer/src/layer.js"></script>
+
+    <script>
+        $(function () {
+            layer.config({
+                extend: 'extend/layer.ext.js'
+            });
+        })
+    </script>
+{% endblock %}
+</body>
+</html>

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}
+    agents
+{% endblock %}
+
+{% block cssrc %}
+    {{ super() }}
+{% endblock %}
+
+{% block css %}
+    .center{
+        text-align:center;
+    }
+{% endblock %}
+
+{% block container %}
+
+<div>
+    <button class="btn btn-sm btn-danger" style="float:right" onclick="stopAll()">全部停止</button>
+
+	<table class="table table-condensed global" style="table-layout:fixed;">
+		<thead>
+            <tr>
+                <th width="5%" class="center">ID</th>
+                <th width="20%" class="center">标签</th>
+                <th width="10%" class="center">Host</th>
+                <th width="10%" class="center">可用CPU</th>
+                <th width="10%" class="center">可用内存</th>
+                <th width="10%" class="center">可用磁盘</th>
+                <th width="10%" class="center">启动时间</th>
+                <th width="10%" class="center">操作</th>
+            </tr>
+		</thead>
+		<tbody id="list-tbody">
+		{% if agents %}
+			{% for agent in agents %}
+				<tr id="list-{{ loop.index }}">
+					<td class="center">{{ loop.index }}</td>
+					<td class="center">{{ agent.tag }}</td>
+					<td class="center">{{ agent.host }}</td>
+					<td class="center">{{ agent.cpu }}</td>
+					<td class="center">{{ agent.memory }}</td>
+					<td class="center">{{ agent.disk }}</td>
+					<td class="center">{{ agent.starttime }}</td>
+					<td class="center"><button class="btn btn-xs btn-danger" onclick="stopAgent('{{ agent.host }}')">停止</button></td>
+				</tr>
+			{% endfor %}
+		{% else %}
+			<tr><td colspan="9" style="text-align:center">暂无运行数据</td></tr>
+		{% endif %}
+		</tbody>
+	</table>
+</div>
+
+{% endblock %}
+
+{% block script %}
+    {{ super() }}
+    <script>
+        function stopAgent(host){
+            $.ajax({
+                url: "/agent/stop_remote/" + host,
+                success: function(data){
+                    if(data.code === 0){
+                        layer.msg("停止成功！")
+                    }else{
+                        layer.msg(data.errorMsg)
+                    }
+                }
+            })
+        }
+
+        function stopAll(){
+            $.ajax({
+                url: "/agent/stop_remote/all",
+                success: function(data){
+                    if(data.code === 0){
+                        layer.msg("停止成功！")
+                    }else{
+                        layer.msg(data.errorMsg)
+                    }
+                }
+            })
+        }
+    </script>
+{% endblock %}

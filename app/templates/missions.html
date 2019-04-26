@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}
+    missions
+{% endblock %}
+
+{% block cssrc %}
+    {{ super() }}
+{% endblock %}
+
+{% block css %}
+    .center{
+        text-align:center;
+    }
+    * {
+         border: 0px solid transparent !important;
+    }
+    button{
+        box-shadow: 0.1px 0.5px 0.5px 0.5px grey;
+    {
+{% endblock %}
+
+{% block container %}
+	<table id="missions-table" class="table global" style="table-layout:fixed;">
+	</table>
+{% endblock %}
+
+{% block script %}
+    {{ super() }}
+    <script>
+        $(function() {
+            var window_height = parseInt(document.documentElement.clientHeight || document.body.clientHeight);
+            var table_height;
+            var page_size;
+            if(window_height > 0 && window_height <= 300){
+                console.log("here");
+                table_height = 250;
+                page_size = 10;
+            } else if(window_height > 300 && window_height <= 700){
+                table_height = 500;
+                page_size = 20;
+            } else if(window_height > 700){
+                table_height = 800;
+                page_size = 50
+            }
+            $("#missions-table").bootstrapTable({
+                url: "/missions/tojson",
+                method: "get",
+                dataType: "json",
+                toolbar: ".toolbar",
+                cache: true,
+                search: true,
+                searchAlign: "left",
+                pagination: true,
+                striped: true,
+                height: table_height,
+                pageNumber: 1,
+                pageSize: page_size,
+                pageList: [10, 20, 50, 100],
+                sidePagination: "server",
+                queryParams: function (params) {//自定义参数，这里的参数是传给后台的，我这是是分页用的
+                    return {//这里的params是table提供的
+                        start: params.offset, //从数据库第几条记录开始
+                        size: params.limit, //找多少条
+                        search: params.search
+                    };
+                },
+                formatRecordsPerPage: function (pageNumber) {
+                    return pageNumber + " 每页记录数";
+                },
+                icons: {
+                    refresh: 'fa fa-refresh',
+                    toggle: 'fa fa-th-list',
+                    columns: 'fa fa-columns',
+                    detailOpen: 'fa fa-plus-circle',
+                    detailClose: 'fa fa-minus-circle'
+                },
+                columns: [{
+                    field: "id",
+                    title: "ID",
+                    align: "center",
+                    width: "3"
+                },{
+                    field: "project",
+                    title: "项目名",
+                    align: "center",
+                    width: "10"
+                },{
+                    field: "api_name",
+                    title: "接口名",
+                    align: "center",
+                    width: "10"
+                },{
+                    field: "tag",
+                    title: "标签",
+                    align: "center",
+                    width: "10"
+                },{
+                    field: "paths",
+                    title: "接口路径",
+                    align: "left",
+                    width: "13",
+                    halign: "center"
+                },{
+                    field: "concurrent",
+                    title: "并发",
+                    align: "center",
+                    width: "10"
+                },{
+                    field: "duration",
+                    title: "时间/次数",
+                    align: "center",
+                    width: "10"
+                },{
+                    field: "loadtype",
+                    title: "压测类型",
+                    align: "center",
+                    width: "10"
+                },{
+                    field: "createdtime",
+                    title: "创建时间",
+                    align: "center",
+                    width: "10"
+                },{
+                    field: "creator",
+                    title: "创建人",
+                    align: "center",
+                    width: "8"
+                },{
+                    field: "operation",
+                    title: "操作",
+                    align: "center",
+                    width: "6"
+                }]
+            });
+
+            $(window).resize(function () {
+                $("#missions-table").bootstrapTable('resetView');
+            });
+
+        });
+
+        function rerun(id) {
+            var index = layer.load(2, {
+                shade: [0.1, '#ffa243'],
+                offset: '200px'
+            });
+            $.ajax({
+                url: "/rerun/" + id,
+                type: "post",
+                error: function (req) {
+                    layer.msg(req.status, {offset:"200px"})
+                },
+                success: function (data) {
+                    if (data.result) {
+                        layer.msg("运行成功！", {offset:"200px"});
+                        window.location.href = "/missions"
+                    } else {
+                        layer.msg("运行失败！" + data.errorMsg, {offset:"200px"})
+                    }
+                }
+            })
+        }
+
+        function editMission(id){
+            $.ajax({
+                url: "/edit/" + id,
+                success: function(data){
+                    if(data.result){
+                        $(".modal-content").html(data.data)
+                    }else{
+                        layer.msg("获取编辑内容失败", {offset:"200px"})
+                    }
+                }
+            })
+        }
+
+        function deleteMission(id){
+            layer.confirm(
+                "确认删除吗？",
+                {btn: ['确认', '取消'], offset:"200px"},
+                function(){
+                    $.ajax({
+                        url: "/deletemission/" + id,
+                        type: "delete",
+                        success: function(data){
+                            if(data.result){
+                                layer.msg("删除成功", {offset:"200px"});
+                                $("#list-"+id).remove();
+                            }else{
+                                layer.msg("删除失败:" + data.errorMsg, {offset:"200px"})
+                            }
+                        }
+                    })
+                },
+                function(){}
+            );
+        }
+    </script>
+    <script src="/static/js/common.js"></script>
+{% endblock %}

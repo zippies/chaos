@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}
+    login
+{% endblock %}
+
+{% block cssrc %}
+    {{ super() }}
+{% endblock %}
+
+{% block container %}
+    <form action="/login" method="post">
+        <ul class="list-inline">
+            <li><label for="name">声明你的身份</label></li>
+            <li><input type="text" onKeyUp="value=value.replace(/[\W]/g,'')" id="name" name="nickname" class="form-control" placeholder="姓名或花名全拼" required autofocus></li>
+            <li><button class="btn btn-primary" type="submit">确认</button></li>
+        </ul>
+    </form>
+{% endblock %}
+

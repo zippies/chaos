@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}
+    missions
+{% endblock %}
+
+{% block cssrc %}
+    {{ super() }}
+{% endblock %}
+
+{% block container %}
+    <div class="container">
+        <form method="post" action="/analyze">
+            <ul class="list-inline" style="display: none">
+                <li>
+                    <label for="project">项目名: </label>
+                    <select name="project" id="project" class="form-control" onchange="choiceProject(this.value)">
+                    {% for p in user_projects %}
+                        <option value="{{ p }}" {% if p == project %}selected="selected"{% endif %}>{{ p }}</option>
+                    {% endfor %}
+                    </select>
+                </li>
+                <li>
+                    <label for="api_name">接口名: </label>
+                    <select name="api_name" id="api_name" class="form-control" onchange="choiceApi(this.value)">
+                        {% for api in apis %}
+                            <option value="{{ api }}" {% if api == api_name %}selected="selected"{% endif %}>{{ api }}</option>
+                        {% endfor %}
+                    </select>
+                </li>
+                <li>
+                    <label for="concurrent">并发数: </label>
+                    <select name="concurrent" id="concurrent" class="form-control" onchange="choiceConcurrent(this.value)">
+                        {% for c in concurrents %}
+                            <option value="{{ c }}" {% if c == concurrent %}selected="selected"{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </li>
+                <li>
+                    <label for="missions">选择任务: </label>
+                    <select name="mission_ids" id="mission_ids" class="form-control" multiple="multiple">
+                        {% for m in missions %}
+                            <option value="{{ m.id }}" {% if m.id in mission_ids %}selected="selected"{% endif %}>{{ m.id }}_{% if m.tag %}{{ m.tag }}{% else %}tag{% endif %}_{{ m.createdtime }}</option>
+                        {% endfor %}
+                    </select>
+                </li>
+                <li>
+                    <button type="submit" class="btn btn-primary">查看</button>
+                </li>
+            </ul>
+        </form>
+        <hr>
+        <div id="main" style="height:300px;width: 1000px;margin-top:10px"></div>
+        <div id="throughput" style="height:300px;width: 1000px;margin-top:10px"></div>
+        <div id="error" style="height:300px;width: 1000px;margin-top:10px"></div>
+    </div>
+{% endblock %}
+
+
+{% block script %}
+    {{ super() }}
+    <script src="/static/bower_components/echarts/dist/echarts.min.js"></script>
+    <script src="/static/bower_components/echarts/theme/macarons.js"></script>
+    <script type="text/javascript">
+        $("#project").multiselect({
+            enableFiltering: true,
+            enableCaseInsensitiveFiltering: true,
+            filterPlaceholder: 'Search',
+            maxHeight: 200
+        });
+
+        $("#api_name").multiselect({
+            enableFiltering: true,
+            enableCaseInsensitiveFiltering: true,
+            filterPlaceholder: 'Search',
+            maxHeight: 200
+        });
+
+        $("#concurrent").multiselect({
+            enableFiltering: true,
+            enableCaseInsensitiveFiltering: true,
+            filterPlaceholder: 'Search',
+            maxHeight: 200
+        });
+
+        $("#mission_ids").multiselect({
+            enableFiltering: true,
+            enableCaseInsensitiveFiltering: true,
+            filterPlaceholder: 'Search',
+            includeSelectAllOption: true,
+            selectAllText: "选择全部",
+            buttonWidth: '150px',
+            maxHeight: 200
+        });
+
+        function choiceProject(project){
+            console.log(project);
+            $.ajax({
+                url: "/apis/" + project.replace("/", "||"),
+                async: false,
+                success: function(data){
+                    if(data.result){
+                        if(data.data.length > 0){
+                            $("#api_name").html("");
+                            data.data.forEach(function(e, i){
+                                if(i === 0){
+                                    choiceApi(e);
+                                    $("#api_name").append("<option value=\""+e+"\" selected=\"selected\">"+e+"</option>")
+                                }else{
+                                    $("#api_name").append("<option value=\""+e+"\">"+e+"</option>")
+                                }
+                            });
+                        }
+                    }else{
+                        layer.msg(data.errorMsg, {offset: "100px"});
+                    }
+                }
+            });
+            $("#api_name").multiselect("destroy").multiselect({
+                enableFiltering: true,
+                enableCaseInsensitiveFiltering: true,
+                filterPlaceholder: 'Search',
+                maxHeight: 200
+            });
+        }
+
+        function choiceApi(api){
+            console.log(api);
+            $.ajax({
+                url: "/concurrents/" + api,
+                async: false,
+                success: function(data){
+                    if(data.result){
+                        if(data.data.length > 0){
+                            $("#concurrent").html("");
+                            data.data.forEach(function(e){
+                                if(e == "{{ concurrent }}"){
+                                    $("#concurrent").append("<option value=\""+e+"\" selected=\"selected\">"+e+"</option>")
+                                }else{
+                                    $("#concurrent").append("<option value=\""+e+"\">"+e+"</option>")
+                                }
+                            });
+                        }
+                    }else{
+                        layer.msg(data.errorMsg, {offset: "100px"});
+                    }
+                }
+            });
+            $("#concurrent").multiselect("destroy").multiselect({
+                enableFiltering: true,
+                enableCaseInsensitiveFiltering: true,
+                filterPlaceholder: 'Search',
+                maxHeight: 200
+            });
+            choiceConcurrent($("#concurrent").val());
+        }
+
+        function choiceConcurrent(concurrent){
+            console.log(concurrent);
+            $.ajax({
+                url: "/missions/" + $("#project").val().replace("/", "||") + "/" + $("#api_name").val() + "/" + concurrent,
+                async: false,
+                success: function(data){
+                    if(data.result){
+                        if(data.data.length > 0){
+                            $("#mission_ids").empty();
+                            data.data.forEach(function(e){
+                                $("#mission_ids").append("<option value=\""+e.id+"\">"+e.tag + "_" +e.createdtime +"</option>")
+                            });
+                        }
+                    }else{
+                        layer.msg(data.errorMsg, {offset: "100px"});
+                    }
+                }
+            });
+            $("#mission_ids").multiselect("destroy").multiselect({
+                enableFiltering: true,
+                enableCaseInsensitiveFiltering: true,
+                filterPlaceholder: 'Search',
+                includeSelectAllOption: true,
+                selectAllText: "选择全部",
+                buttonWidth: '150px',
+                maxHeight: 200
+            });
+        }
+
+        var mainChart = echarts.init(document.getElementById("main"), 'macarons');
+        var throughputChart = echarts.init(document.getElementById("throughput"), 'macarons');
+        var errorChart = echarts.init(document.getElementById("error"), 'macarons');
+
+        mainOption = {
+            title: {
+                text: '响应时间走势',
+                subtext: 'Project: {{ project }}   Api: {{ api_name }}   Concurrent: {{ concurrent }}'
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data:['平均_响应时间','95%_响应时间','99%_响应时间']
+            },
+            toolbox: {
+                show: true,
+                feature: {
+                    dataZoom: {
+                        show: true
+                    },
+                    dataView: {readOnly: false},
+                    magicType: {type: ['line', 'bar']},
+                    restore: {},
+                    saveAsImage: {}
+                }
+            },
+            xAxis:  {
+                type: 'category',
+                boundaryGap: false,
+                data: {{ timelist|safe }}
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: {
+                    formatter: '{value} ms'
+                }
+            },
+            series: [
+{#                {#}
+{#                    name:'最大响应时间',#}
+{#                    type:'line',#}
+{#                    data:{{ max_rt_list|safe }},#}
+{#                    markPoint: {#}
+{#                        data: [#}
+{#                            {type: 'max', name: '最大值'},#}
+{#                            {type: 'min', name: '最小值'}#}
+{#                        ]#}
+{#                    },#}
+{#                    markLine: {#}
+{#                        data: [#}
+{#                            {type: 'average', name: '平均值'}#}
+{#                        ]#}
+{#                    },#}
+{#                    symbol: "diamond",#}
+{#                    smooth: true#}
+{#                },#}
+                {
+                    name:'99%_响应时间',
+                    type:'line',
+                    data:{{ avg_rt_p99_list|safe }},
+                    markPoint: {
+                        data: [
+                            {type: 'max', name: '最大值'},
+                            {type: 'min', name: '最小值'}
+                        ]
+                    },
+                    markLine: {
+                        data: [
+                            {type: 'average', name: '平均值'}
+                        ]
+                    },
+                    symbol: "diamond",
+                    smooth: true
+                },
+                {
+                    name:'95%_响应时间',
+                    type:'line',
+                    data:{{ avg_rt_p95_list|safe }},
+                    markPoint: {
+                        data: [
+                            {type: 'max', name: '最大值'},
+                            {type: 'min', name: '最小值'}
+                        ]
+                    },
+                    markLine: {
+                        data: [
+                            {type: 'average', name: '平均值'}
+                        ]
+                    },
+                    symbol: "diamond",
+                    smooth: true
+                },
+{#                {#}
+{#                    name:'最小响应时间',#}
+{#                    type:'line',#}
+{#                    data:{{ min_rt_list|safe }},#}
+{#                    markPoint: {#}
+{#                        data: [#}
+{#                            {type: 'max', name: '最大值'},#}
+{#                            {type: 'min', name: '最小值'}#}
+{#                        ]#}
+{#                    },#}
+{#                    markLine: {#}
+{#                        data: [#}
+{#                            {type: 'average', name: '平均值'}#}
+{#                        ]#}
+{#                    },#}
+{#                    symbol: "diamond",#}
+{#                    smooth: true#}
+{#                },#}
+                {
+                    name:'平均_响应时间',
+                    type:'line',
+                    data:{{ avg_rt_list|safe }},
+                    markPoint: {
+                        data: [
+                            {type: 'max', name: '最大值'},
+                            {type: 'min', name: '最小值'}
+                        ]
+                    },
+                    markLine: {
+                        data: [
+                            {type: 'average', name: '平均值'}
+                        ]
+                    },
+                    symbol: "diamond",
+                    smooth: true
+                }
+            ]
+        };
+
+        throughputOption = {
+            title: {
+                text: '吞吐量走势',
+                subtext: 'Project: {{ project }}   Api: {{ api_name }}   Concurrent: {{ concurrent }}'
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data:['吞吐量']
+            },
+            toolbox: {
+                show: true,
+                feature: {
+                    dataZoom: {
+                        show: true
+                    },
+                    dataView: {readOnly: false},
+                    magicType: {type: ['line', 'bar']},
+                    restore: {},
+                    saveAsImage: {}
+                }
+            },
+            xAxis:  {
+                type: 'category',
+                boundaryGap: false,
+                data: {{ timelist|safe }}
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: {
+                    formatter: '{value} %'
+                }
+            },
+            series: [
+                {
+                    name:'吞吐量',
+                    type:'line',
+                    data:{{ tps_list|safe }},
+                    markPoint: {
+                        data: [
+                            {type: 'max', name: '最大值'},
+                            {type: 'min', name: '最小值'}
+                        ]
+                    },
+                    symbol: "diamond",
+                    smooth: true
+                }
+
+            ]
+        };
+
+        errorOption = {
+            title: {
+                text: '错误率走势',
+                subtext: 'Project: {{ project }}   Api: {{ api_name }}   Concurrent: {{ concurrent }}'
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data:['错误率']
+            },
+            toolbox: {
+                show: true,
+                feature: {
+                    dataZoom: {
+                        show: true
+                    },
+                    dataView: {readOnly: false},
+                    magicType: {type: ['line', 'bar']},
+                    restore: {},
+                    saveAsImage: {}
+                }
+            },
+            xAxis:  {
+                type: 'category',
+                boundaryGap: false,
+                data: {{ timelist|safe }}
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: {
+                    formatter: '{value} %'
+                }
+            },
+            series: [
+                {
+                    name:'错误率',
+                    type:'line',
+                    data:{{ f_rate_list|safe }},
+                    markPoint: {
+                        data: [
+                            {type: 'max', name: '最大值'},
+                            {type: 'min', name: '最小值'}
+                        ]
+                    },
+                    symbol: "diamond",
+                    smooth: true
+                }
+
+            ]
+        };
+
+        mainChart.setOption(mainOption);
+        throughputChart.setOption(throughputOption);
+        errorChart.setOption(errorOption);
+
+        $(".list-inline").show()
+    </script>
+{% endblock %}
